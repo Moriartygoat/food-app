@@ -5,3 +5,11 @@ export type NavProps = {
   back: () => void;
   reset: (screen: string) => void;
 };
+export type Address = {
+  id: number;
+  label: 'Home' | 'Work' | 'Other';
+  text: string;
+  street: string;
+  post: string;
+  apt: string;
+};

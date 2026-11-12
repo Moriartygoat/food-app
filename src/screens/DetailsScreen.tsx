@@ -6,9 +6,15 @@ import { C, TOP, common } from '../theme';
 import { Item } from '../types';
 import type { Food } from '../data';
 
-type Props = { back: () => void; onAdd: (item: Item) => void; food: Food };
+type Props = {
+  back: () => void;
+  onAdd: (item: Item) => void;
+  food: Food;
+  fav: boolean;
+  onFav: () => void;
+};
 
-export default function DetailsScreen({ back, onAdd, food }: Props) {
+export default function DetailsScreen({ back, onAdd, food, fav, onFav }: Props) {
   const [size, setSize] = useState(14);
   const [qty, setQty] = useState(1);
   const unit = size === 10 ? Math.round(food.price * 0.75) : size === 14 ? food.price : Math.round(food.price * 1.25);
@@ -19,7 +25,7 @@ export default function DetailsScreen({ back, onAdd, food }: Props) {
         <View style={common.rowBetween}>
           <Round onPress={back}>‹</Round>
           <Text style={{ color: C.text }}>Details</Text>
-          <View style={{ width: 40 }} />
+          <Round onPress={onFav}>{fav ? '❤️' : '🤍'}</Round>
         </View>
 
         <View style={s.img}>
