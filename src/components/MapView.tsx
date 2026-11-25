@@ -1,38 +1,111 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, LayoutChangeEvent } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { View, Platform, StyleSheet } from 'react-native';
 
 type Props = {
-  pin: { x: number; y: number };
-  onPick: (x: number, y: number) => void;
+  lat: number;
+  lng: number;
+  focusKey?: number; // увеличивай, чтобы карта перелетела к точке (IP/GPS)
+  onPick?: (lat: number, lng: number) => void;
   height?: number;
+  interactive?: boolean; // false = только показать точку (корзина)
 };
 
-export default function MapView({ pin, onPick, height = 220 }: Props) {
-  const [size, setSize] = useState({ w: 300, h: height });
-  const onLayout = (e: LayoutChangeEvent) =>
-    setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
+const buildHtml = (lat: number, lng: number, interactive: boolean) => `<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>html,body,#m{height:100%;margin:0;background:#EEF1F4}</style></head><body><div id="m"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var interactive=${interactive};
+var map=L.map('m',{
+  attributionControl:false,
+  zoomControl:interactive,dragging:interactive,touchZoom:interactive,
+  scrollWheelZoom:interactive,doubleClickZoom:interactive,boxZoom:interactive,keyboard:interactive
+}).setView([${lat},${lng}],${interactive ? 15 : 16});
+L.control.attribution({prefix:false}).addTo(map);
 
-  return (
-    <Pressable
-      style={[s.map, { height }]}
-      onLayout={onLayout}
-      onPress={(e) => onPick(e.nativeEvent.locationX / size.w, e.nativeEvent.locationY / size.h)}
-    >
-      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <View style={[s.green, { left: '58%', top: '8%', width: 90, height: 70 }]} />
-        <View style={[s.green, { left: '8%', top: '62%', width: 70, height: 60 }]} />
-        <View style={[s.road, { top: '35%', left: '-10%', width: '130%', height: 14, transform: [{ rotate: '-12deg' }] }]} />
-        <View style={[s.road, { top: '72%', left: '-10%', width: '130%', height: 10, transform: [{ rotate: '8deg' }] }]} />
-        <View style={[s.road, { left: '30%', top: '-10%', width: 12, height: '130%', transform: [{ rotate: '15deg' }] }]} />
-        <Text style={[s.pin, { left: pin.x * size.w - 14, top: pin.y * size.h - 30 }]}>📍</Text>
+var esri=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{
+  maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);
+var failed=0;
+esri.on('tileerror',function(){
+  failed++;
+  if(failed===4){
+    map.removeLayer(esri);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  }
+});
+
+var marker=L.marker([${lat},${lng}]).addTo(map);
+function send(a,b){var s=JSON.stringify({lat:a,lng:b});
+  if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(s);}else{parent.postMessage(s,'*');}}
+if(interactive){map.on('click',function(e){marker.setLatLng(e.latlng);send(e.latlng.lat,e.latlng.lng);});}
+function setPin(a,b){marker.setLatLng([a,b]);map.setView([a,b],16);}
+window.addEventListener('message',function(e){try{var d=JSON.parse(e.data);if(d.set){setPin(d.lat,d.lng);}}catch(x){}});
+</script></body></html>`;
+
+export default function MapView({ lat, lng, focusKey = 0, onPick, height = 240, interactive = true }: Props) {
+  const html = useMemo(() => buildHtml(lat, lng, interactive), []); // только начальная точка
+  const webRef = useRef<any>(null);
+  const frameRef = useRef<any>(null);
+  const first = useRef(true);
+
+  useEffect(() => {
+    if (first.current) { first.current = false; return; }
+    if (Platform.OS === 'web') {
+      frameRef.current?.contentWindow?.postMessage(JSON.stringify({ set: 1, lat, lng }), '*');
+    } else {
+      webRef.current?.injectJavaScript(`setPin(${lat},${lng});true;`);
+    }
+  }, [focusKey]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !onPick) return;
+    const h = (e: MessageEvent) => {
+      if (e.source !== frameRef.current?.contentWindow) return;
+      try {
+        const d = JSON.parse(e.data);
+        if (typeof d.lat === 'number') onPick(d.lat, d.lng);
+      } catch {}
+    };
+    window.addEventListener('message', h);
+    return () => window.removeEventListener('message', h);
+  }, [onPick]);
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[s.map, { height }]} pointerEvents={interactive ? 'auto' : 'none'}>
+        {React.createElement('iframe', {
+          ref: frameRef,
+          srcDoc: html,
+          style: { border: 0, width: '100%', height: '100%' },
+        })}
       </View>
-    </Pressable>
+    );
+  }
+
+  const { WebView } = require('react-native-webview');
+  return (
+    <View style={[s.map, { height }]} pointerEvents={interactive ? 'auto' : 'none'}>
+      <WebView
+        ref={webRef}
+        style={{ flex: 1, backgroundColor: '#EEF1F4' }}
+        originWhitelist={['*']}
+        source={{ html }}
+        javaScriptEnabled
+        domStorageEnabled
+        mixedContentMode="always"
+        nestedScrollEnabled
+        onMessage={(e: any) => {
+          try {
+            const d = JSON.parse(e.nativeEvent.data);
+            onPick?.(d.lat, d.lng);
+          } catch {}
+        }}
+      />
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   map: { backgroundColor: '#EEF1F4', borderRadius: 16, overflow: 'hidden' },
-  green: { position: 'absolute', backgroundColor: '#BFE3B4', borderRadius: 30 },
-  road: { position: 'absolute', backgroundColor: '#FFE08A' },
-  pin: { position: 'absolute', fontSize: 28 },
 });

@@ -12,4 +12,6 @@ export type Address = {
   street: string;
   post: string;
   apt: string;
+  lat?: number;
+  lng?: number;
 };

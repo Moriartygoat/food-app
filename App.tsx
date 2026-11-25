@@ -34,9 +34,10 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [favs, setFavs] = useState<number[]>([]);
   const [editing, setEditing] = useState<Address | null>(null);
+  const [selectedAddr, setSelectedAddr] = useState<number | null>(1);
   const [addresses, setAddresses] = useState<Address[]>([
-    { id: 1, label: 'Home', text: '2464 Royal Ln. Mesa, New Jersey 45463', street: '', post: '45463', apt: '' },
-    { id: 2, label: 'Work', text: '3891 Ranchview Dr. Richardson, California 62639', street: '', post: '62639', apt: '' },
+    { id: 1, label: 'Home', text: 'Абай даңғылы 10, Алматы', street: 'Абай даңғылы 10', post: '050000', apt: '', lat: 43.2389, lng: 76.8897 },
+    { id: 2, label: 'Work', text: 'Достық даңғылы 100, Алматы', street: 'Достық даңғылы 100', post: '050010', apt: '', lat: 43.2381, lng: 76.9566 },
   ]);
   const [items, setItems] = useState<Item[]>([
     { name: 'Pizza Calzone European', price: 32, qty: 2, e: '🍕' },
@@ -56,6 +57,7 @@ export default function App() {
 
   const saveAddress = (a: Address) => {
     setAddresses((p) => (p.some((x) => x.id === a.id) ? p.map((x) => (x.id === a.id ? a : x)) : [...p, a]));
+    setSelectedAddr(a.id);
     back();
   };
 
@@ -76,6 +78,8 @@ export default function App() {
     setItems([]);
     go('success');
   };
+
+  const deliveryAddr = addresses.find((x) => x.id === selectedAddr) ?? null;
 
   let view: React.ReactNode = null;
   switch (screen) {
@@ -99,7 +103,19 @@ export default function App() {
         />
       );
       break;
-    case 'cart': view = <CartScreen back={back} items={items} setItems={setItems} onPlace={placeOrder} />; break;
+    case 'cart':
+      view = (
+        <CartScreen
+          back={back}
+          items={items}
+          setItems={setItems}
+          onPlace={placeOrder}
+          address={deliveryAddr?.text ?? ''}
+          coords={deliveryAddr && deliveryAddr.lat != null && deliveryAddr.lng != null ? { lat: deliveryAddr.lat, lng: deliveryAddr.lng } : null}
+          onEditAddress={() => go('addresses')}
+        />
+      );
+      break;
     case 'profile': view = <ProfileScreen {...nav} />; break;
     case 'personal': view = <PersonalInfoScreen back={back} />; break;
     case 'orders': view = <MyOrdersScreen {...nav} />; break;
@@ -111,6 +127,8 @@ export default function App() {
         <AddressesScreen
           back={back}
           addresses={addresses}
+          selectedId={selectedAddr}
+          onSelect={setSelectedAddr}
           onEdit={(a) => { setEditing(a); go('addressForm'); }}
           onAddNew={() => { setEditing(null); go('addressForm'); }}
           onDelete={(id) => setAddresses((p) => p.filter((x) => x.id !== id))}

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import Round from '../components/Round';
 import Btn from '../components/Btn';
+import MapView from '../components/MapView';
 import { C, TOP, common } from '../theme';
 import { Item } from '../types';
 
@@ -10,9 +11,12 @@ type Props = {
   items: Item[];
   setItems: (items: Item[]) => void;
   onPlace: () => void;
+  address: string;
+  coords: { lat: number; lng: number } | null;
+  onEditAddress: () => void;
 };
 
-export default function CartScreen({ back, items, setItems, onPlace }: Props) {
+export default function CartScreen({ back, items, setItems, onPlace, address, coords, onEditAddress }: Props) {
   const total = items.reduce((sum, it) => sum + it.price * it.qty, 0);
   const change = (k: number, d: number) =>
     setItems(items.map((it, j) => (j === k ? { ...it, qty: Math.max(1, it.qty + d) } : it)));
@@ -59,11 +63,27 @@ export default function CartScreen({ back, items, setItems, onPlace }: Props) {
       <View style={s.sheet}>
         <View style={common.rowBetween}>
           <Text style={common.label}>DELIVERY ADDRESS</Text>
-          <Text style={{ color: C.orange, fontSize: 12 }}>EDIT</Text>
+          <TouchableOpacity onPress={onEditAddress}>
+            <Text style={{ color: C.orange, fontSize: 12 }}>EDIT</Text>
+          </TouchableOpacity>
         </View>
-        <View style={[common.input, { justifyContent: 'center', marginBottom: 16 }]}>
-          <Text style={{ color: C.grey }}>2118 Thornridge Cir. Syracuse</Text>
-        </View>
+
+        {coords && (
+          <View style={{ marginBottom: 10 }}>
+            <MapView
+              key={`${coords.lat},${coords.lng}`}
+              lat={coords.lat}
+              lng={coords.lng}
+              interactive={false}
+              height={130}
+            />
+          </View>
+        )}
+
+        <TouchableOpacity onPress={onEditAddress} style={[common.input, { justifyContent: 'center', marginBottom: 16 }]}>
+          <Text numberOfLines={1} style={{ color: address ? C.text : C.grey }}>{address || 'Add delivery address'}</Text>
+        </TouchableOpacity>
+
         <View style={[common.rowBetween, { marginBottom: 16 }]}>
           <Text style={common.label}>
             TOTAL: <Text style={{ color: C.text, fontSize: 28, fontWeight: '800' }}>${total}</Text>

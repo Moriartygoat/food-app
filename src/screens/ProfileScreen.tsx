@@ -12,7 +12,7 @@ const groups = [
   [
     { i: '📦', t: 'My Orders', to: 'orders' },
     { i: '🛒', t: 'Cart', to: 'cart' },
-    { i: '💜', t: 'Favourite', to: 'foods' },
+    { i: '💜', t: 'Favourite', to: 'favourites' },
     { i: '🔔', t: 'Notifications', to: 'notifications' },
     { i: '💳', t: 'Payment Method', to: 'payment' },
   ],
