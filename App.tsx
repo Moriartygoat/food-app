@@ -20,6 +20,11 @@ import AddressesScreen from './src/screens/AddressesScreen';
 import AddressFormScreen from './src/screens/AddressFormScreen';
 import FavouritesScreen from './src/screens/FavouritesScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import PaymentScreen from './src/screens/PaymentScreen';
+import FaqScreen from './src/screens/FaqScreen';
+import ReviewsScreen from './src/screens/ReviewsScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import TrackScreen from './src/screens/TrackScreen';
 import Header from './src/components/Header';
 import FoodBackground from './src/components/FoodBackground';
 import { foods } from './src/data';
@@ -28,7 +33,26 @@ import { Item, Address } from './src/types';
 import { C, common } from './src/theme';
 
 const DARK_SCREENS = ['login', 'signup', 'forgot', 'verify', 'cart'];
-const NO_BG_SCREENS = ['splash', 'onboarding', 'addressForm'];
+// экраны без общего фона (у foods свой фон внутри, на карте фон мешает)
+const NO_BG_SCREENS = ['splash', 'onboarding', 'addressForm', 'foods'];
+
+// у каждого экрана свой цвет фона
+const SCREEN_THEME: Record<string, string> = {
+  home: 'default',
+  search: 'Chicken',
+  profile: 'Donut',
+  personal: 'Dessert',
+  orders: 'Burger',
+  favourites: 'Pizza',
+  notifications: 'Drinks',
+  addresses: 'Sandwich',
+  payment: 'Hot Dog',
+  faqs: 'Tacos',
+  reviews: 'Fries',
+  settings: 'Pasta',
+  track: 'Shawarma',
+  success: 'Donut',
+};
 
 export default function App() {
   const [stack, setStack] = useState<string[]>(['splash']);
@@ -82,6 +106,10 @@ export default function App() {
   };
 
   const deliveryAddr = addresses.find((x) => x.id === selectedAddr) ?? null;
+  const deliveryCoords =
+    deliveryAddr && deliveryAddr.lat != null && deliveryAddr.lng != null
+      ? { lat: deliveryAddr.lat, lng: deliveryAddr.lng }
+      : null;
 
   let view: React.ReactNode = null;
   switch (screen) {
@@ -113,7 +141,7 @@ export default function App() {
           setItems={setItems}
           onPlace={placeOrder}
           address={deliveryAddr?.text ?? ''}
-          coords={deliveryAddr && deliveryAddr.lat != null && deliveryAddr.lng != null ? { lat: deliveryAddr.lat, lng: deliveryAddr.lng } : null}
+          coords={deliveryCoords}
           onEditAddress={() => go('addresses')}
         />
       );
@@ -140,6 +168,11 @@ export default function App() {
     case 'addressForm': view = <AddressFormScreen back={back} initial={editing} onSave={saveAddress} />; break;
     case 'favourites': view = <FavouritesScreen back={back} favs={favs} onFood={openFood} onToggle={toggleFav} />; break;
     case 'notifications': view = <NotificationsScreen back={back} />; break;
+    case 'payment': view = <PaymentScreen back={back} />; break;
+    case 'faqs': view = <FaqScreen back={back} />; break;
+    case 'reviews': view = <ReviewsScreen back={back} />; break;
+    case 'settings': view = <SettingsScreen back={back} />; break;
+    case 'track': view = <TrackScreen back={back} address={deliveryAddr?.text ?? ''} coords={deliveryCoords} />; break;
     default:
       view = (
         <View style={{ flex: 1, backgroundColor: C.white }}>
@@ -153,12 +186,13 @@ export default function App() {
   }
 
   const showBg = !DARK_SCREENS.includes(screen) && !NO_BG_SCREENS.includes(screen);
+  const bgTheme = screen === 'details' ? selected.cat : SCREEN_THEME[screen] ?? 'default';
 
   return (
     <View style={{ flex: 1 }}>
       <StatusBar barStyle={DARK_SCREENS.includes(screen) ? 'light-content' : 'dark-content'} />
       {view}
-      {showBg && <FoodBackground />}
+      {showBg && <FoodBackground theme={bgTheme} />}
       {toast !== '' && (
         <View style={{ position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: C.navy, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 24 }}>
           <Text style={{ color: C.white }}>{toast}</Text>
