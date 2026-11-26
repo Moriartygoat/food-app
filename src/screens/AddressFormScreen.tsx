@@ -71,7 +71,7 @@ export default function AddressFormScreen({ back, initial, onSave }: Props) {
         }
       } catch {}
       if (lat == null) {
-        const d = await (await fetch('https://ipapi.co/json/')).json();
+        const d = await (await fetch('https://ipapi.co/json/')).json(); // < --- API  
         if (d.latitude) {
           lat = d.latitude; lng = d.longitude; ipAddr = d.ip || '';
           place = [d.city, d.region, d.country_name].filter(Boolean).join(', ');

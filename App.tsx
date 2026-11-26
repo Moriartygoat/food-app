@@ -21,12 +21,14 @@ import AddressFormScreen from './src/screens/AddressFormScreen';
 import FavouritesScreen from './src/screens/FavouritesScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import Header from './src/components/Header';
+import FoodBackground from './src/components/FoodBackground';
 import { foods } from './src/data';
 import type { Food } from './src/data';
 import { Item, Address } from './src/types';
 import { C, common } from './src/theme';
 
 const DARK_SCREENS = ['login', 'signup', 'forgot', 'verify', 'cart'];
+const NO_BG_SCREENS = ['splash', 'onboarding', 'addressForm'];
 
 export default function App() {
   const [stack, setStack] = useState<string[]>(['splash']);
@@ -150,10 +152,13 @@ export default function App() {
       );
   }
 
+  const showBg = !DARK_SCREENS.includes(screen) && !NO_BG_SCREENS.includes(screen);
+
   return (
     <View style={{ flex: 1 }}>
       <StatusBar barStyle={DARK_SCREENS.includes(screen) ? 'light-content' : 'dark-content'} />
       {view}
+      {showBg && <FoodBackground />}
       {toast !== '' && (
         <View style={{ position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: C.navy, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 24 }}>
           <Text style={{ color: C.white }}>{toast}</Text>

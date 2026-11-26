@@ -15,9 +15,12 @@ type Props = {
 };
 
 export default function DetailsScreen({ back, onAdd, food, fav, onFav }: Props) {
+  const kinds = food.kinds ?? [];
   const [size, setSize] = useState(14);
   const [qty, setQty] = useState(1);
+  const [kind, setKind] = useState(kinds[0] ?? '');
   const unit = size === 10 ? Math.round(food.price * 0.75) : size === 14 ? food.price : Math.round(food.price * 1.25);
+  const itemName = kind ? `${food.name} (${kind})` : food.name;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.white }}>
@@ -43,6 +46,23 @@ export default function DetailsScreen({ back, onAdd, food, fav, onFav }: Props) 
           <Text style={common.meta}>🚚 Free</Text>
           <Text style={common.meta}>🕒 20 min</Text>
         </View>
+
+        {kinds.length > 0 && (
+          <>
+            <Text style={[common.label, { marginTop: 18 }]}>TYPE:</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {kinds.map((k) => (
+                <TouchableOpacity
+                  key={k}
+                  onPress={() => setKind(k)}
+                  style={[s.kind, kind === k && { backgroundColor: C.orange, borderColor: C.orange }]}
+                >
+                  <Text style={{ color: kind === k ? C.white : C.text }}>{k}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
 
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 18 }}>
           <Text style={[common.label, { marginBottom: 0, marginRight: 14 }]}>SIZE:</Text>
@@ -77,7 +97,7 @@ export default function DetailsScreen({ back, onAdd, food, fav, onFav }: Props) 
           </View>
         </View>
         <View style={{ height: 14 }} />
-        <Btn title="ADD TO CART" onPress={() => onAdd({ name: food.name, price: unit, qty, e: food.e })} />
+        <Btn title="ADD TO CART" onPress={() => onAdd({ name: itemName, price: unit, qty, e: food.e })} />
       </View>
     </View>
   );
@@ -87,6 +107,7 @@ const s = StyleSheet.create({
   img: { height: 200, borderRadius: 24, backgroundColor: C.yellow, marginTop: 20, alignItems: 'center', justifyContent: 'center' },
   chip: { alignSelf: 'flex-start', borderWidth: 1, borderColor: '#EDEDED', borderRadius: 30, paddingHorizontal: 14, paddingVertical: 8, marginTop: 16 },
   title: { fontSize: 20, fontWeight: '800', marginTop: 14, color: C.text },
+  kind: { borderWidth: 1, borderColor: '#EDEDED', borderRadius: 30, paddingHorizontal: 16, paddingVertical: 9 },
   size: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F0F5FA', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   ingr: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFF1E8', alignItems: 'center', justifyContent: 'center' },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: C.white, padding: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24, elevation: 12 },
